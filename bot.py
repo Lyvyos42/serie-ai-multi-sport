@@ -316,6 +316,7 @@ async def basketball_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("📅 Today's Games", callback_data="basketball_matches")],
         [InlineKeyboardButton("🏆 NBA Standings", callback_data="basketball_standings_nba")],
+        [InlineKeyboardButton("🎯 Smart Prediction", callback_data="show_basket_predict")],
         [InlineKeyboardButton("📊 My Basketball Stats", callback_data="basketball_stats")],
         [InlineKeyboardButton("🔙 Back to Sports", callback_data="back_to_menu")]
     ]
@@ -384,6 +385,7 @@ async def tennis_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("📅 Today's Matches", callback_data="tennis_matches")],
         [InlineKeyboardButton("🏆 ATP Rankings", callback_data="tennis_rankings_atp")],
         [InlineKeyboardButton("🏆 WTA Rankings", callback_data="tennis_rankings_wta")],
+        [InlineKeyboardButton("🎯 Smart Prediction", callback_data="show_tennis_predict")],
         [InlineKeyboardButton("📊 My Tennis Stats", callback_data="tennis_stats")],
         [InlineKeyboardButton("🔙 Back to Sports", callback_data="back_to_menu")]
     ]
@@ -1310,6 +1312,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     elif data == "show_predict_info":
         await show_predict_info_callback(update, context)
+        
+    elif data == "show_tennis_predict":
+        await show_tennis_predict_info_callback(update, context)
+        
+    elif data == "show_basket_predict":
+        await show_basket_predict_info_callback(update, context)
     
     elif data == "show_value_bets":
         await value_bets_command(update, context)
@@ -1409,6 +1417,62 @@ _Using advanced AI models + PostgreSQL database_
 """
     
     keyboard = [[InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def show_tennis_predict_info_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Callback: Tennis Prediction Info"""
+    query = update.callback_query
+    await query.answer()
+    
+    text = """
+    🎯 *TENNIS SMART PREDICTION*
+    
+    *How it works:*
+    1. AI analyzes player form & H2H
+    2. Considers surface preferences (Hard/Clay/Grass)
+    3. Evaluates recent tournament performance
+    
+    *Quick Prediction:*
+    `/tennispredict [Player 1] [Player 2]`
+    Example: `/tennispredict Djokovic Alcaraz`
+    
+    *Features:*
+    ✅ Match Winner & Set Score
+    ✅ Surface Specialist Indicator
+    ✅ Key Stat Comparisons
+    """
+    
+    keyboard = [[InlineKeyboardButton("🔙 Back to Tennis", callback_data="sport_tennis")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def show_basket_predict_info_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Callback: Basketball Prediction Info"""
+    query = update.callback_query
+    await query.answer()
+    
+    text = """
+    🏀 *BASKETBALL SMART PREDICTION*
+    
+    *How it works:*
+    1. AI analyzes team efficiency ratings
+    2. Considers Home Court advantage
+    3. Evaluates key factors (Rebounds, 3PT%)
+    
+    *Quick Prediction:*
+    `/basketpredict [Home] [Away]`
+    Example: `/basketpredict Lakers Warriors`
+    
+    *Features:*
+    ✅ Spread & Total Points
+    ✅ Winner Confidence
+    ✅ Key Matchup Factors
+    """
+    
+    keyboard = [[InlineKeyboardButton("🔙 Back to Basketball", callback_data="sport_basketball")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await query.edit_message_text(text, reply_markup=reply_markup, parse_mode='Markdown')
