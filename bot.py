@@ -21,12 +21,13 @@ from models import init_db, User, Prediction, Bet, ValueBet, SystemLog
 from database import DatabaseManager
 
 # ========== SPORTS MANAGERS ==========
+from football_manager import FootballDataManager
 from tennis_manager import TennisDataManager
 from basketball_manager import BasketballDataManager
 
 # ========== CONFIGURATION ==========
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-API_KEY = os.environ.get("FOOTBALL_DATA_API_KEY")
+API_KEY = os.environ.get("SPORTS_API_KEY") or os.environ.get("FOOTBALL_DATA_API_KEY")
 ADMIN_USER_ID = os.environ.get("ADMIN_USER_ID", "").split(",")  # Comma-separated admin IDs
 INVITE_ONLY = os.environ.get("INVITE_ONLY", "true").lower() == "true"  # Default: true
 DATABASE_URL = os.environ.get("DATABASE_URL")  # PostgreSQL connection string
@@ -57,127 +58,8 @@ def run_flask():
     port = int(os.getenv("PORT", "8080"))
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
-# ========== DATA MANAGER ==========
-class DataManager:
-    """Simple and reliable data manager"""
-    
-    def __init__(self):
-        self.leagues = {
-            'SA': '🇮🇹 Serie A',
-            'PL': '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League', 
-            'PD': '🇪🇸 La Liga',
-            'BL1': '🇩🇪 Bundesliga'
-        }
-        
-        self.todays_matches = [
-            {'league': 'SA', 'home': 'Inter', 'away': 'Milan', 'time': '20:45'},
-            {'league': 'PL', 'home': 'Man City', 'away': 'Liverpool', 'time': '12:30'},
-            {'league': 'PD', 'home': 'Barcelona', 'away': 'Real Madrid', 'time': '21:00'},
-            {'league': 'SA', 'home': 'Juventus', 'away': 'Napoli', 'time': '18:00'},
-            {'league': 'BL1', 'home': 'Bayern', 'away': 'Dortmund', 'time': '17:30'}
-        ]
-    
-    def get_todays_matches(self):
-        """Get today's matches"""
-        matches = []
-        for match in self.todays_matches:
-            league_name = self.leagues.get(match['league'], 'Unknown')
-            matches.append({
-                'home': match['home'],
-                'away': match['away'], 
-                'league': league_name,
-                'time': match['time']
-            })
-        return matches
-    
-    def get_standings(self, league_code):
-        """Get standings"""
-        if league_code not in self.leagues:
-            return {'league_name': 'Unknown', 'standings': []}
-        
-        league_name = self.leagues[league_code]
-        
-        # Teams for each league
-        teams_map = {
-            'SA': ['Inter', 'Milan', 'Juventus', 'Napoli', 'Roma', 'Lazio', 'Atalanta', 'Fiorentina'],
-            'PL': ['Man City', 'Liverpool', 'Arsenal', 'Chelsea', 'Man Utd', 'Tottenham', 'Newcastle', 'Aston Villa'],
-            'PD': ['Barcelona', 'Real Madrid', 'Atletico', 'Sevilla', 'Valencia', 'Betis', 'Villarreal', 'Athletic'],
-            'BL1': ['Bayern', 'Dortmund', 'Leipzig', 'Leverkusen', 'Frankfurt', 'Wolfsburg', 'Gladbach', 'Hoffenheim']
-        }
-        
-        teams = teams_map.get(league_code, [])
-        standings = []
-        
-        for i, team in enumerate(teams, 1):
-            played = random.randint(20, 30)
-            won = random.randint(played//2, played-5)
-            draw = random.randint(3, played-won-3)
-            lost = played - won - draw
-            gf = random.randint(30, 70)
-            ga = random.randint(15, 50)
-            gd = gf - ga
-            points = won*3 + draw
-            
-            standings.append({
-                'position': i,
-                'team': team,
-                'played': played,
-                'won': won,
-                'draw': draw,
-                'lost': lost,
-                'gf': gf,
-                'ga': ga,
-                'gd': gd,
-                'points': points
-            })
-        
-        standings.sort(key=lambda x: x['points'], reverse=True)
-        
-        return {
-            'league_name': league_name,
-            'standings': standings
-        }
-    
-    def analyze_match(self, home, away):
-        """Analyze match"""
-        home_score = sum(ord(c) for c in home.lower()) % 100
-        away_score = sum(ord(c) for c in away.lower()) % 100
-        
-        if home_score + away_score == 0:
-            home_score, away_score = 50, 50
-        
-        home_prob = home_score / (home_score + away_score) * 100
-        away_prob = away_score / (home_score + away_score) * 100
-        draw_prob = max(20, 100 - home_prob - away_prob)
-        
-        home_prob -= draw_prob / 3
-        away_prob -= draw_prob / 3
-        
-        prediction = "1" if home_prob > away_prob and home_prob > draw_prob else "X" if draw_prob > home_prob and draw_prob > away_prob else "2"
-        confidence = max(home_prob, draw_prob, away_prob)
-        
-        return {
-            'probabilities': {
-                'home': round(home_prob, 1),
-                'draw': round(draw_prob, 1),
-                'away': round(away_prob, 1)
-            },
-            'prediction': prediction,
-            'confidence': round(confidence, 1),
-            'goals': {
-                'home': max(0, round((home_score/100) * 3)),
-                'away': max(0, round((away_score/100) * 2))
-            },
-            'value_bet': {
-                'market': 'Match Result',
-                'selection': prediction,
-                'odds': round(1/({'1': home_prob, 'X': draw_prob, '2': away_prob}[prediction]/100), 2),
-                'edge': round(random.uniform(3, 8), 1)
-            }
-        }
-
 # ========== GLOBAL INSTANCES ==========
-data_manager = DataManager()
+data_manager = FootballDataManager()
 tennis_manager = TennisDataManager()
 basketball_manager = BasketballDataManager()
 

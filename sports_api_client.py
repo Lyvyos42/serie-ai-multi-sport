@@ -48,6 +48,27 @@ class SportsAPIClient:
             logger.error(f"API Request failed: {e}")
             return None
     
+    # ========== FOOTBALL API METHODS ==========
+    
+    def get_football_fixtures(self, date=None):
+        """Get football fixtures for a date"""
+        if not date:
+            date = datetime.now().strftime("%Y-%m-%d")
+        return self._make_request(self.football_url, "fixtures", {"date": date})
+
+    def get_football_standings(self, league_id, season=None):
+        """Get football standings"""
+        if not season:
+            season = datetime.now().year
+        return self._make_request(self.football_url, "standings", {
+            "league": league_id,
+            "season": season
+        })
+
+    def get_football_predictions(self, fixture_id):
+        """Get predictions for a fixture"""
+        return self._make_request(self.football_url, "predictions", {"fixture": fixture_id})
+
     # ========== TENNIS API METHODS ==========
     
     def get_tennis_matches_today(self):
