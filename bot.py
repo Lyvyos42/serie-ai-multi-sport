@@ -213,29 +213,38 @@ def access_control(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
         user_id = update.effective_user.id
         
-        if not user_storage.is_user_allowed(user_id):
-            # Check for invite code
-            if update.message and update.message.text:
-                if update.message.text.startswith('/start'):
-                    parts = update.message.text.split()
-                    if len(parts) > 1 and parts[1] == "invite123":
-                        user_storage.add_user(user_id)
-                        await update.message.reply_text(
-                            "✅ *Invitation accepted!* Welcome to Serie AI Bot.\n\n"
-                            "Use /start to access all features.",
-                            parse_mode='Markdown'
-                        )
-                        return
-            
-            await update.message.reply_text(
-                "🔒 *Access Restricted*\n\n"
-                "This bot is invitation-only.\n"
-                "Please contact the administrator for access.\n\n"
-                "If you have an invite code, use:\n"
-                "`/start invite123`",
-                parse_mode='Markdown'
-            )
-            return
+            # Check for allowed users
+            if not user_storage.is_user_allowed(user_id):
+                # Check for invite code in text messages
+                if update.message and update.message.text:
+                    if update.message.text.startswith('/start'):
+                        parts = update.message.text.split()
+                        if len(parts) > 1 and parts[1] == "invite123":
+                            user_storage.add_user(user_id)
+                            await update.message.reply_text(
+                                "✅ *Invitation accepted!* Welcome to Serie AI Bot.\n\n"
+                                "Use /start to access all features.",
+                                parse_mode='Markdown'
+                            )
+                            return
+                
+                # Deny access
+                msg = (
+                    "🔒 *Access Restricted*\n\n"
+                    "This bot is invitation-only.\n"
+                    "Please contact the administrator for access.\n\n"
+                    "If you have an invite code, use:\n"
+                    "`/start invite123`"
+                )
+                
+                if update.callback_query:
+                    await update.callback_query.answer("🔒 Access Restricted", show_alert=True)
+                    # Optional: Edit message to show restricted access
+                    # await update.callback_query.edit_message_text(msg, parse_mode='Markdown')
+                elif update.message:
+                    await update.message.reply_text(msg, parse_mode='Markdown')
+                    
+                return
         
         return await func(update, context, *args, **kwargs)
     
@@ -454,56 +463,71 @@ _Enhanced with AI analysis_
 @access_control
 async def todays_matches_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Text command: /matches"""
-    matches = data_manager.get_todays_matches()
-    
-    if not matches:
-        response = "No matches scheduled for today."
-    else:
-        response = "📅 *TODAY'S FOOTBALL MATCHES*\n\n"
+    try:
+        matches = data_manager.get_todays_matches()
         
-        # Group by league
-        matches_by_league = {}
-        for match in matches:
-            league = match['league']
-            if league not in matches_by_league:
-                matches_by_league[league] = []
-            matches_by_league[league].append(match)
+        if not matches:
+            response = "No matches scheduled for today."
+        else:
+            response = "📅 *TODAY'S FOOTBALL MATCHES*\n\n"
+            
+            # Group by league
+            matches_by_league = {}
+            for match in matches:
+                league = match['league']
+                if league not in matches_by_league:
+                    matches_by_league[league] = []
+                matches_by_league[league].append(match)
+            
+            for league_name, league_matches in matches_by_league.items():
+                response += f"*{league_name}*\n"
+                for match in league_matches:
+                    response += f"⏰ {match['home']} vs {match['away']} ({match['time']})\n"
+                response += "\n"
+            
+            response += f"_Total: {len(matches)} matches_"
         
-        for league_name, league_matches in matches_by_league.items():
-            response += f"*{league_name}*\n"
-            for match in league_matches:
-                response += f"⏰ {match['home']} vs {match['away']} ({match['time']})\n"
-            response += "\n"
-        
-        response += f"_Total: {len(matches)} matches_"
-    
-    # Check if called from message or callback
-    if update.message:
-        await update.message.reply_text(response, parse_mode='Markdown')
-    elif update.callback_query:
-        keyboard = [[InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_menu")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.callback_query.edit_message_text(response, reply_markup=reply_markup, parse_mode='Markdown')
+        # Check if called from message or callback
+        if update.message:
+            await update.message.reply_text(response, parse_mode='Markdown')
+        elif update.callback_query:
+            keyboard = [[InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_menu")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(response, reply_markup=reply_markup, parse_mode='Markdown')
+            
+    except Exception as e:
+        logger.error(f"Matches Error: {e}")
+        err_msg = f"❌ Error loading matches: {str(e)}"
+        if update.callback_query:
+             await update.callback_query.edit_message_text(err_msg)
+        else:
+             await update.message.reply_text(err_msg)
 
 @access_control
 async def standings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Text command: /standings"""
-    keyboard = [
-        [InlineKeyboardButton("🇮🇹 Serie A", callback_data="standings_SA")],
-        [InlineKeyboardButton("🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League", callback_data="standings_PL")],
-        [InlineKeyboardButton("🇪🇸 La Liga", callback_data="standings_PD")],
-        [InlineKeyboardButton("🇩🇪 Bundesliga", callback_data="standings_BL1")],
-        [InlineKeyboardButton("🔙 Back to Menu", callback_data="back_to_menu")]
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    text = "🏆 *Select League Standings:*"
-    
-    # Check if called from message or callback
-    if update.message:
-        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='Markdown')
-    elif update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+    try:
+        keyboard = [
+            [InlineKeyboardButton("🇮🇹 Serie A", callback_data="standings_SA")],
+            [InlineKeyboardButton("🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League", callback_data="standings_PL")],
+            [InlineKeyboardButton("🇪🇸 La Liga", callback_data="standings_PD")],
+            [InlineKeyboardButton("🇩🇪 Bundesliga", callback_data="standings_BL1")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back_to_menu")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        text = "🏆 *Select League Standings:*"
+        
+        # Check if called from message or callback
+        if update.message:
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+        elif update.callback_query:
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+            
+    except Exception as e:
+        logger.error(f"Standings Error: {e}")
+        if update.callback_query:
+             await update.callback_query.edit_message_text(f"❌ Error: {e}")
 
 @access_control
 async def value_bets_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -841,9 +865,16 @@ async def tennis_rankings_command(update: Update, context: ContextTypes.DEFAULT_
         response += f"{player['rank']:2}  {player_name:19} {country:8} {player['points']:6}\n"
     
     response += "```\n"
+    response += "```\n"
     response += f"_Showing top {min(20, len(rankings))} players_"
     
-    await update.message.reply_text(response, parse_mode='Markdown')
+    # Check if called from message or callback
+    if update.message:
+        await update.message.reply_text(response, parse_mode='Markdown')
+    elif update.callback_query:
+        keyboard = [[InlineKeyboardButton("🔙 Back to Tennis", callback_data="sport_tennis")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(response, reply_markup=reply_markup, parse_mode='Markdown')
 
 @access_control
 async def tennis_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
