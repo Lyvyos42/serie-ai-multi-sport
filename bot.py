@@ -213,38 +213,36 @@ def access_control(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
         user_id = update.effective_user.id
         
-            # Check for allowed users
-            if not user_storage.is_user_allowed(user_id):
-                # Check for invite code in text messages
-                if update.message and update.message.text:
-                    if update.message.text.startswith('/start'):
-                        parts = update.message.text.split()
-                        if len(parts) > 1 and parts[1] == "invite123":
-                            user_storage.add_user(user_id)
-                            await update.message.reply_text(
-                                "✅ *Invitation accepted!* Welcome to Serie AI Bot.\n\n"
-                                "Use /start to access all features.",
-                                parse_mode='Markdown'
-                            )
-                            return
+        # Check for allowed users
+        if not user_storage.is_user_allowed(user_id):
+            # Check for invite code in text messages
+            if update.message and update.message.text:
+                if update.message.text.startswith('/start'):
+                    parts = update.message.text.split()
+                    if len(parts) > 1 and parts[1] == "invite123":
+                        user_storage.add_user(user_id)
+                        await update.message.reply_text(
+                            "✅ *Invitation accepted!* Welcome to Serie AI Bot.\n\n"
+                            "Use /start to access all features.",
+                            parse_mode='Markdown'
+                        )
+                        return
+            
+            # Deny access
+            msg = (
+                "🔒 *Access Restricted*\n\n"
+                "This bot is invitation-only.\n"
+                "Please contact the administrator for access.\n\n"
+                "If you have an invite code, use:\n"
+                "`/start invite123`"
+            )
+            
+            if update.callback_query:
+                await update.callback_query.answer("🔒 Access Restricted", show_alert=True)
+            elif update.message:
+                await update.message.reply_text(msg, parse_mode='Markdown')
                 
-                # Deny access
-                msg = (
-                    "🔒 *Access Restricted*\n\n"
-                    "This bot is invitation-only.\n"
-                    "Please contact the administrator for access.\n\n"
-                    "If you have an invite code, use:\n"
-                    "`/start invite123`"
-                )
-                
-                if update.callback_query:
-                    await update.callback_query.answer("🔒 Access Restricted", show_alert=True)
-                    # Optional: Edit message to show restricted access
-                    # await update.callback_query.edit_message_text(msg, parse_mode='Markdown')
-                elif update.message:
-                    await update.message.reply_text(msg, parse_mode='Markdown')
-                    
-                return
+            return
         
         return await func(update, context, *args, **kwargs)
     
@@ -269,7 +267,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"❌ Database sync failed: {e}")
     
     text = """
-🏆 *MULTI-SPORT PREDICTION BOT [UPDATED]*
+🏆 *MULTI-SPORT PREDICTION BOT [v2.0 - FIX APPLIED]*
 
 ⚡ *AI-Powered Predictions & Analysis*
 
