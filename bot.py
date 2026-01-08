@@ -269,7 +269,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"❌ Database sync failed: {e}")
     
     text = """
-🏆 *MULTI-SPORT PREDICTION BOT*
+🏆 *MULTI-SPORT PREDICTION BOT [UPDATED]*
 
 ⚡ *AI-Powered Predictions & Analysis*
 
