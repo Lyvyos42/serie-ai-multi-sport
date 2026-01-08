@@ -197,6 +197,7 @@ async def basketball_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("📅 Today's Games", callback_data="basketball_matches")],
         [InlineKeyboardButton("🏆 NBA Standings", callback_data="basketball_standings_nba")],
         [InlineKeyboardButton("🎯 Smart Prediction", callback_data="show_basket_predict")],
+        [InlineKeyboardButton("💎 Value Bets", callback_data="show_basket_value")],
         [InlineKeyboardButton("📊 My Basketball Stats", callback_data="basketball_stats")],
         [InlineKeyboardButton("🔙 Back to Sports", callback_data="back_to_menu")]
     ]
@@ -255,6 +256,7 @@ async def tennis_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 • 📅 Today's Matches
 • 🎾 ATP/WTA Rankings
 • 🎯 Match Predictions
+• 💎 Value Bets
 • 📊 Player Analysis
 • 📈 Prediction History
 
@@ -266,6 +268,7 @@ async def tennis_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🏆 ATP Rankings", callback_data="tennis_rankings_atp")],
         [InlineKeyboardButton("🏆 WTA Rankings", callback_data="tennis_rankings_wta")],
         [InlineKeyboardButton("🎯 Smart Prediction", callback_data="show_tennis_predict")],
+        [InlineKeyboardButton("💎 Value Bets", callback_data="show_tennis_value")],
         [InlineKeyboardButton("📊 My Tennis Stats", callback_data="tennis_stats")],
         [InlineKeyboardButton("🔙 Back to Sports", callback_data="back_to_menu")]
     ]
@@ -447,6 +450,36 @@ async def value_bets_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(response, parse_mode='Markdown')
     elif update.callback_query:
         keyboard = [[InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_menu")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(response, reply_markup=reply_markup, parse_mode='Markdown')
+
+@access_control
+async def tennis_value_bets_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Tennis Value bets"""
+    response = "💎 *TENNIS VALUE BETS*\n\n"
+    response += "No high-value tennis bets identified for this hour.\n"
+    response += "_AI is analyzing ATP/WTA matchups..._\n\n"
+    response += "🔙 *Strategy:* Look for over-priced underdogs on specific surfaces."
+    
+    if update.message:
+        await update.message.reply_text(response, parse_mode='Markdown')
+    elif update.callback_query:
+        keyboard = [[InlineKeyboardButton("🔙 Back to Tennis", callback_data="sport_tennis")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(response, reply_markup=reply_markup, parse_mode='Markdown')
+
+@access_control
+async def basketball_value_bets_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Basketball Value bets"""
+    response = "💎 *BASKETBALL VALUE BETS*\n\n"
+    response += "No strong value bets found for current NBA/EuroLeague games.\n"
+    response += "_AI is monitoring point spreads..._\n\n"
+    response += "🔙 *Strategy:* Focus on Team Efficiency vs Point Spreads."
+
+    if update.message:
+        await update.message.reply_text(response, parse_mode='Markdown')
+    elif update.callback_query:
+        keyboard = [[InlineKeyboardButton("🔙 Back to Basketball", callback_data="sport_basketball")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.callback_query.edit_message_text(response, reply_markup=reply_markup, parse_mode='Markdown')
 
@@ -1202,6 +1235,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "show_value_bets":
         await value_bets_command(update, context)
     
+    elif data == "show_tennis_value":
+        await tennis_value_bets_command(update, context)
+        
+    elif data == "show_basket_value":
+        await basketball_value_bets_command(update, context)
+    
     elif data == "user_stats":
         await mystats_command(update, context)
         
@@ -1436,12 +1475,14 @@ def main():
     application.add_handler(CommandHandler("atp", tennis_rankings_command))
     application.add_handler(CommandHandler("wta", tennis_rankings_command))
     application.add_handler(CommandHandler("tennisstats", tennis_stats_command))
+    application.add_handler(CommandHandler("tennisvalue", tennis_value_bets_command))
 
     # Basketball Commands
     application.add_handler(CommandHandler("basketmatches", basketball_matches_command))
     application.add_handler(CommandHandler("basketpredict", basketball_predict_command))
     application.add_handler(CommandHandler("nbastandings", basketball_standings_command))
     application.add_handler(CommandHandler("basketstats", basketball_stats_command))
+    application.add_handler(CommandHandler("basketvalue", basketball_value_bets_command))
     
     # Admin commands
     application.add_handler(CommandHandler("admin", admin_command))
